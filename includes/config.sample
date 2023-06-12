@@ -1,0 +1,30 @@
+; Konfigurationsdatei / configuration file
+; Rename to config.ini
+; In config.ini umbenennen
+
+[GLOBAL] 
+    ; Abschnitt für allgemeine Konfigurationsparameter
+    ; Section for global configuration parameter
+    DEBUG = false;
+    LOG_TYPE = 'ERRORS'; // ALL || ERRORS
+
+[DATABASE_JTL] 
+    ; Connection to JTL database server
+    ; Verbindungsdaten für JTL Datenbank Server
+    DRIVER = 'sqlsrv' ; Datenbank Treiber (Standard: mysql)
+    MSSQL_DB_HOST = ""
+    MSSQL_DB_PORT = 1433;
+    MSSQL_DB_INSTANCE = "\JTLWAWI"
+    MSSQL_DB_DATABASE = "eazybusiness"
+    MSSQL_DB_USERNAME = "sa"
+    MSSQL_DB_PASSWORD = ""
+    MSSQL_DB_ENCRYPT = 'no'
+
+[LOCAL_DB]
+    ; Connection to MySQL / MariaDB database server
+    ; Verbindungsdaten für MySQL / MariaDB Datenbank Server
+    DRIVER = 'mysql'
+    HOST = 'localhost'
+    DATABASE = ''
+    USERNAME = ''
+    PASSWORD = ''
