@@ -1,4 +1,4 @@
-# German / Deutsch: Applikation für die Bewerbung bei einer Stelle
+# German / Deutsch: Applikation für die Bewerbung für einen Job
 
 ## Aufgabenbeschreibung:
 
