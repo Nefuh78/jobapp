@@ -1,42 +1,45 @@
 <?php
+session_start();
 use Tracy\Debugger;
 use nefuh\framework\config;
 use nefuh\framework\main;
 use nefuh\jtl\jtl;
 
 /**
- * Customer Account Portal - API
+ * JobApp für Bewerbung
  * 
  * @author Joerg Hufen
- * @copyright Joerg Hufen, 2022
- * @package framework
- * @subpackage logging
- * @version 2.0
+ * @copyright Joerg Hufen, 2023
+ * @package JobApp
+ * @version 1.0
  */
 
-ini_set('display_errors', true);
-ini_set('error_reporting', E_ALL);
 DEFINE('BASE_DIR', $_SERVER['DOCUMENT_ROOT']);
 require_once(__DIR__.DIRECTORY_SEPARATOR.'includes'.DIRECTORY_SEPARATOR.'includes.php');
 
+// Initizialize Tracy Debugging Tool
 Debugger::setSessionStorage(new Tracy\NativeSession);
 Debugger::dispatch();
 Debugger::$strictMode = E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED;
-if ( (main::get_var('debug', 'bool', 'REQUEST') === true || config::get_var('DEBUG', 'GLOBAL') === true) && main::get_var('action', 'string', 'REQUEST') != 'get_logs')
+if ( (main::get_var('debug', 'bool', 'REQUEST') === true || config::get_var('DEBUG', 'GLOBAL') === true)) {
+    ini_set('error_reporting', config::get_var('LOG_TYPE', 'GLOBAL'));
+    ini_set('display_errors', true);
     Debugger::enable(Debugger::DEVELOPMENT);
+}
 else
     Debugger::enable(Debugger::PRODUCTION);
 
-$smarty = new Smarty(); // Initialize template engine
+// Initialize template engine and set some parameters
+$smarty = new Smarty(); 
 $smarty->setTemplateDir(BASE_DIR.DIRECTORY_SEPARATOR.'template'.DIRECTORY_SEPARATOR);
 $smarty->setCompileDir(BASE_DIR.DIRECTORY_SEPARATOR.'template_cache/'.DIRECTORY_SEPARATOR);
 $smarty->setConfigDir(BASE_DIR.DIRECTORY_SEPARATOR.'includes'.DIRECTORY_SEPARATOR);
 $smarty->setCacheDir(BASE_DIR.DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR);
-$smarty->caching = false;
+$smarty->caching = false; 
 $smarty->cache_lifetime = 86400;
 $smarty->compile_check = true;
 
-// Local mysql database
+// Connect to MySQL / MariaDB server for internal database
 try {
     $localdb = new Nette\Database\Connection(config::get_var('DRIVER', 'LOCAL_DB').':host='.config::get_var('HOST', 'LOCAL_DB').';dbname='.config::get_var('DATABASE', 'LOCAL_DB'), config::get_var('USERNAME', 'LOCAL_DB'), config::get_var('PASSWORD', 'LOCAL_DB'));
     Nette\Bridges\DatabaseTracy\ConnectionPanel::initialize($localdb, true, 'Lokale Datenbank');
@@ -48,6 +51,8 @@ catch (Exception $e) {
     $smarty->display('error.tpl');
     die();
 }
+
+// Connect to JTL Wawi database server
 try {
     $wawidb = new Nette\Database\Connection(config::get_var('DRIVER', 'DATABASE_JTL').':Server='.config::get_var('MSSQL_DB_HOST', 'DATABASE_JTL').config::get_var('MSSQL_DB_INSTANCE', 'DATABASE_JTL').';Database='.config::get_var('MSSQL_DB_DATABASE', 'DATABASE_JTL').';Encrypt='.config::get_var('MSSQL_DB_ENCRYPT', 'DATABASE_JTL'), config::get_var('MSSQL_DB_USERNAME', 'DATABASE_JTL'), config::get_var('MSSQL_DB_PASSWORD', 'DATABASE_JTL'));
     Nette\Bridges\DatabaseTracy\ConnectionPanel::initialize($wawidb, true, 'Wawi Datenbank');
@@ -60,35 +65,39 @@ catch (Exception $e) {
     die();
 }
 
+// Request some variable
 $action = main::get_var('action', 'string', 'REQUEST');
 $first_date = main::get_var('start', 'string', 'REQUEST');
 $end_date = main::get_var('end', 'string', 'REQUEST');
 
+// If requested variables are empty, set default values
 if (!isset($first_date) || empty($first_date)) $first_date = jtl::get_first_order_date();
 if (!isset($end_date) || empty($end_date)) $end_date = jtl::get_last_order_date();
-
 $first_date = new DateTime($first_date.' 00:00:00');
 $end_date = new DateTime($end_date.' 23:59:59');
+$_SESSION['first_date'] = $first_date;
+$_SESSION['end_date'] = $end_date;
 
+// Main controller part
 switch($action) {    
     default:
     case 'dashboard':
         $smarty->assign('start_date', jtl::get_first_order_date());
         $smarty->assign('end_date', jtl::get_last_order_date());
-        $smarty->assign('current_start_date', $first_date->format('Y-m-d'));
+        $smarty->assign('current_start_date', $_SESSION['first_date']->format('Y-m-d'));
         $smarty->assign('current_end_date', $end_date->format('Y-m-d'));
         $smarty->assign('content', '');
         $smarty->display('index.tpl');
     break;
 
     case 'get_top_10_most_buyed_products':
-        $data = json_encode(jtl::get_top_products(10, 'DESC', $first_date, $end_date), JSON_NUMERIC_CHECK);
+        $data = json_encode(jtl::get_products(10, 'DESC', $first_date, $end_date), JSON_NUMERIC_CHECK);
         echo $data;
         die();
     break;
 
     case 'get_top_10_worst_buyed_products':
-        $data = json_encode(jtl::get_top_products(10, 'ASC', $first_date, $end_date), JSON_NUMERIC_CHECK);
+        $data = json_encode(jtl::get_products(10, 'ASC', $first_date, $end_date), JSON_NUMERIC_CHECK);
         echo $data;
         die();
     break;
@@ -149,5 +158,4 @@ switch($action) {
         echo $data;
         die();
     break;
-
 }

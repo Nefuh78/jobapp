@@ -6,14 +6,18 @@ namespace nefuh\framework;
  * Class for configuration functions
  *
  * @author Joerg Hufen
- * @copyright Joerg Hufen, 2022
+ * @copyright Joerg Hufen, 2023
  * @package framework
- * @subpackage configuration
- * @version 2.0
+ * @version 1.0
  */
 
 class config {
 
+    /**
+     * Internal function to read config.ini and parse data into array
+     *
+     * @return array config data array
+     */
     private static function read_config():array  {
         $cfg = [];
         $cfg_file = BASE_DIR.DIRECTORY_SEPARATOR.'includes'.DIRECTORY_SEPARATOR.'config.ini';
@@ -22,7 +26,15 @@ class config {
         return $cfg;
     }
 
-    static function get_var(string $name, string $section = 'GLOBAL', string $type = 'string') {
+    /**
+     * Get config variable value
+     *
+     * @param string $name Variable name
+     * @param string $section Configuration section (Default GLOBAL)
+     * @param string $type Type of value (Default string)
+     * @return mixed The variable value in the given type format 
+     */
+    public static function get_var(string $name, string $section = 'GLOBAL', string $type = 'string') {
         $cfg = self::read_config();
         if (isset($name) && !empty($name)) $name = strtoupper($name);
         if (isset($cfg[$section][$name]) && !empty($cfg[$section][$name])) {
@@ -53,7 +65,15 @@ class config {
         }
     }
 
-    static function set_var(string $name, $value, string $section = 'GLOBAL'):void {
+    /**
+     * Change or add a variable value in the configuration an write it back to config.ini
+     *
+     * @param string $name Variable name
+     * @param mixed $value Value of the variable
+     * @param string $section Configuration section (Default GLOBAL)
+     * @return void
+     */
+    public static function set_var(string $name, $value, string $section = 'GLOBAL'):void {
         $cfg = self::read_config();
         $cfg[$section][$name] = $value;
         $content_to_write = '';

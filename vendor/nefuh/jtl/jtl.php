@@ -9,29 +9,51 @@ use DateTime;
  * This class best extends a class for processing the data received from database.
  * 
  * @author Joerg Hufen
- * @copyright Joerg Hufen, 2022
+ * @copyright Joerg Hufen, 2023
  * @package jtl
- * @version 2.0
+ * @version 1.0
  */
 class jtl {
 
     public static $date_now = null;
     private static $defect_id = 2;
     
+
+    // Wrapper function for local database connection
     private static function localdb() {
         global $localdb;
         return $localdb;
     }
 
+    // Wrapper function for jtl database connection
     private static function db() {
         global $wawidb;
         return $wawidb;
     }
     
-    public static function get_top_products(int $num, string $sort, $start_date, $end_date):array {
+    /**
+     * Fetch a number of articles from database
+     * 
+     * The function fetches first all products from JTL database and store it in a local database table for sorting.
+     *
+     * @param integer $num Number of articles to return
+     * @param string $sort Sorting for fetching data from database
+     * @param DateTime $start_date Start date 
+     * @param DateTime $end_date End date
+     * @return array article data
+     */
+    public static function get_products(int $num, string $sort, DateTime $start_date, DateTime $end_date):array {
         $return = [];
         self::localdb()->query('TRUNCATE top_articles');
-        $data = self::db()->fetchAll('SELECT kArtikel, cArtNr, fAnzahl, cName, cEinheit FROM Verkauf.tAuftragPosition AS tAuftragPosition LEFT JOIN Verkauf.tAuftrag AS tAuftrag ON tAuftrag.kAuftrag = tAuftragPosition.kAuftrag WHERE',['tAuftrag.dErstellt >=' => $start_date, 'tAuftrag.dErstellt <=' => $end_date]);
+        $data = self::db()->fetchAll('  SELECT 
+                                            kArtikel, 
+                                            cArtNr, 
+                                            fAnzahl, 
+                                            cName, 
+                                            cEinheit 
+                                        FROM Verkauf.tAuftragPosition AS tAuftragPosition 
+                                        LEFT JOIN Verkauf.tAuftrag AS tAuftrag ON tAuftrag.kAuftrag = tAuftragPosition.kAuftrag 
+                                        WHERE',['tAuftrag.dErstellt >=' => $start_date, 'tAuftrag.dErstellt <=' => $end_date]);
         foreach ($data as $entry) {
             if (!empty($entry['cArtNr'])) {
                 $products[$entry['cArtNr']]['kArtikel'] = intval($entry['kArtikel']);
@@ -51,7 +73,14 @@ class jtl {
         return $data;
     }
 
-    public static function get_revenues_by_years($start_date, $end_date):array {
+    /**
+     * Get revenues for each year between start date and end date
+     *
+     * @param DateTime $start_date DateTime Object
+     * @param DateTime $end_date DateTime Object
+     * @return array Array by years
+     */
+    public static function get_revenues_by_years(DateTime $start_date, DateTime $end_date):array {
         $return = [];
         $data = self::db()->fetchAll("SELECT kAuftrag, dErstellt FROM Verkauf.tAuftrag WHERE",['tAuftrag.dErstellt >=' => $start_date, 'tAuftrag.dErstellt <=' => $end_date, 'nKomplettAusgeliefert' => 1]);
         if (isset($data) && !empty($data)) {
@@ -72,7 +101,14 @@ class jtl {
         return $return;
     }
 
-    public static function get_revenues_by_month($start_date, $end_date):array {
+    /**
+     * Retrieve revenues for each month between start and end date, separated by year.
+     *
+     * @param DateTime $start_date DateTime object
+     * @param DateTime $end_date DateTime object
+     * @return array Array with revenues by year and month
+     */
+    public static function get_revenues_by_month(DateTime $start_date, DateTime $end_date):array {
         $return = [];
         $data = self::db()->fetchAll("SELECT kAuftrag, dErstellt FROM Verkauf.tAuftrag WHERE",['tAuftrag.dErstellt >=' => $start_date, 'tAuftrag.dErstellt <=' => $end_date, 'nKomplettAusgeliefert' => 1]);
         if (isset($data) && !empty($data)) {
@@ -96,7 +132,11 @@ class jtl {
         return $return;
     }
 
-
+    /**
+     * Get first order date from orders in jtl wawi
+     *
+     * @return string Date as string in format Y-m-d
+     */
     public static function get_first_order_date():string {
         $return = '';
         $data = self::db()->fetch('SELECT dErstellt FROM Verkauf.tAuftrag ORDER BY dErstellt ASC');
@@ -104,6 +144,11 @@ class jtl {
         return $return;
     }
 
+    /**
+     * Get last order date from orders in jtl wawi
+     *
+     * @return string Date as string in format Y-m-d
+     */
     public static function get_last_order_date():string {
         $return = '';
         $data = self::db()->fetch('SELECT dErstellt FROM Verkauf.tAuftrag ORDER BY dErstellt DESC');
@@ -111,6 +156,11 @@ class jtl {
         return $return;
     }
 
+    /**
+     * Retrieve all products, that have no description.
+     *
+     * @return array Array with internal article id (kArtikel), article number and article name
+     */
     public static function get_missing_descriptions():array {
         $return = [];
         $articles = (array) self::db()->fetchAll('  SELECT 
@@ -123,6 +173,12 @@ class jtl {
         return $return;
     }
 
+    /**
+     * Retrieve more detailed informations about an article
+     *
+     * @param integer $kArtikel internal article id to retrieve informations
+     * @return array Array with article data
+     */
     public static function get_article_details(int $kArtikel):array {
         $return = [];
         $data = self::db()->fetch("SELECT 
@@ -182,6 +238,12 @@ class jtl {
         return $return;
     }
 
+    /**
+     * Internal function to get the article product group
+     *
+     * @param integer $kArtikel internal article id
+     * @return string Name of the product group
+     */
     private static function get_article_group(int $kArtikel):string {
         $return = 'Keine';
         $data = self::db()->fetch(' SELECT tWarengruppe.cName
@@ -192,6 +254,12 @@ class jtl {
         return $return;
     }
 
+    /**
+     * Fetch description for an article
+     *
+     * @param integer $kArtikel internal article id
+     * @return string The description for the article or empty if there's no description in the database.
+     */
     private static function get_article_description(int $kArtikel):string {
         $return = '';
         $data = self::db()->fetch('SELECT cBeschreibung FROM tArtikelBeschreibung WHERE', ['kArtikel' => $kArtikel, 'kPlattform' => 1]);
@@ -199,6 +267,13 @@ class jtl {
         return $return;
     }
 
+    /**
+     * Retrieve the selling amount of an article for a submitted year.
+     *
+     * @param integer $kArtikel internal article id
+     * @param string $year year to retrieve data for
+     * @return float selling amount as float
+     */
     private static function get_num_sold_by_year(int $kArtikel, string $year):float {
         $return = 0;
         $start_date = new DateTime($year.'-01-01 00:00:00');
@@ -212,6 +287,13 @@ class jtl {
         return $return;
     }
 
+    /**
+     * Get multiple order stats for a given time period between start and end date.
+     *
+     * @param DateTime $start_date 
+     * @param DateTime $end_date
+     * @return array Stats
+     */
     public static function get_order_stats(DateTime $start_date, DateTime $end_date):array {
         $return = [];
         $tmp = self::db()->fetch("SELECT COUNT(kAuftrag) AS num FROM Verkauf.tAuftrag WHERE", ['dErstellt >=' => $start_date, 'dErstellt <=' => $end_date, 'nKomplettAusgeliefert' => 1, 'nStorno' => 0]);
@@ -227,6 +309,11 @@ class jtl {
         return $return;
     }
 
+    /**
+     * Get an array with articles that are marked as defect.
+     *
+     * @return array 
+     */
     public static function get_defect_articles():array {
         $return = [];
         $tmp = self::db()->fetchAll("SELECT kArtikel FROM dbo.tArtikel WHERE kZustand = ?", self::$defect_id);
@@ -236,7 +323,13 @@ class jtl {
         return $return;
     }
 
-    private static function get_article_selling_data($kArtikel):array {
+    /**
+     * Get sellling data for an article
+     *
+     * @param int $kArtikel
+     * @return array
+     */
+    private static function get_article_selling_data(int $kArtikel):array {
         $return = [];
         $data = (array) self::db()->fetchAll('  SELECT 
                                             Verkauf.tAuftragPositionEckdaten.kAuftrag,

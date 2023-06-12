@@ -1,22 +1,16 @@
 <?php
 
 namespace nefuh\framework;
-use nefuh\framework\config;
-use nefuh\framework\logging;
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
-use PHPMailer\PHPMailer\Exception;
 
 /**
  * Framework main class
  * 
- * Class for global framework functions
+ * Class for framework functions
  * 
  * @author Joerg Hufen
- * @copyright Joerg Hufen, 2022
+ * @copyright Joerg Hufen, 2023
  * @package framework
- * @subpackage main
- * @version 2.0
+ * @version 1.0
  */
 class main
 {
@@ -72,23 +66,23 @@ class main
     }
     
     /**
-     * check_arg
+     * Check if a parameters is in the arguments
      *
-     * @param  mixed $var
-     * @return void
+     * @param  string $var Parametername to check
+     * @return array Array with parameters and values or empty array
      */
-    private static function check_arg(string $var) {
+    private static function check_arg(string $var):string {
         $arguments = self::get_arg();
         if (isset($arguments[$var])) return $arguments[$var];
-        else null;
+        else return '';
     }
     
     /**
-     * get_arg
+     * Retrieve an array with parameters, submitted by command line
      *
-     * @return void
+     * @return array Array with parameters and values
      */
-    private static function get_arg() {
+    private static function get_arg():array {
         global $argc, $argv;
         $arguments = [];
         if ($argc > 1) {
@@ -104,12 +98,12 @@ class main
     }
         
     /**
-     * read_csv
+     * Read data from a submitted csv file and return the data as array.
      *
-     * @param  string $file
-     * @param  string $separator
-     * @param  int $length
-     * @return array
+     * @param  string $file Filename with path of the csv file to read
+     * @param  string $separator The field separator (Default semicolon)
+     * @param  int $length If is 0 then the size will be determined by filesize command
+     * @return array Array with data read from csv file
      */
     static function read_csv(string $file, string $separator = ';', int $length = 0):array {
         $data = [];
@@ -120,19 +114,21 @@ class main
                     $data[] = $tmp;
                 fclose($handle);
             }   
-            else logging::write_log('Datei '.$file.' konnte nicht geöffnet werden.');
+            else dumpe('Datei '.$file.' konnte nicht geöffnet werden.');
         }
-        else logging::write_log('Datei '.$file.' nicht lesbar oder nicht vorhanden!');
+        else dumpe('Datei '.$file.' nicht lesbar oder nicht vorhanden!');
         return $data;
     }
     
     /**
-     * write_csv
+     * Write data array to csv file.
+     * 
+     * Warning: If submitted file exists, all data will be overwritten.
      *
-     * @param  string $file
-     * @param  array $data
-     * @param  string $delimiter
-     * @return bool
+     * @param  string $file Filename with path, where the data should be written to
+     * @param  array $data The data as array to write 
+     * @param  string $delimiter The delimiter to use, to separate fields in the csv file
+     * @return bool true if file was written, otherwoise false
      */
     public static function write_csv(string $file, array $data, string $delimiter = ';'):bool {
         if ($handle = fopen($file, "w")) {
@@ -145,12 +141,12 @@ class main
     }
 
     /**
-     * add_csv
+     * Add data to an existing csv file.
      *
-     * @param  string $file
-     * @param  array $data
-     * @param  string $delimiter
-     * @return bool
+     * @param  string $file Filename with path, where the data should be written to
+     * @param  array $data The data as array to write 
+     * @param  string $delimiter The delimiter to use, to separate fields in the csv file
+     * @return bool true if file was written, otherwoise false
      */
     public static function add_csv(string $file, array $data, string $delimiter = ';'):bool {
         if ($handle = fopen($file, "a")) {
@@ -162,6 +158,13 @@ class main
         return false;
     }
 
+    /**
+     * Function to reload the page and additionaly submit a message
+     *
+     * @param string $msg Optional message to submit on reload
+     * @param string $url The URL of the page that should be reloaded.
+     * @return void
+     */
     static public function reload_page(string $msg = '', string $url = ''):void {
         if (!isset($url) || empty($url)) {
             if (isset($msg) && !empty($msg))
@@ -178,6 +181,14 @@ class main
         die();
     }
 
+    /**
+     * Function to return the month name by number
+     * 
+     * Currently only german month names
+     *
+     * @param integer $num Number of the month
+     * @return string The name of the month for the submitted number
+     */
     public static function get_month_name(int $num):string {
         switch ($num) {
             case 1:
@@ -226,8 +237,7 @@ class main
             
             case 12:
                 return 'Dezember';
-            break;
-            
+            break;            
         }
     }
 }
