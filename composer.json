@@ -1,6 +1,6 @@
 {
-    "name": "nefuh/snafu",
-    "description": "Snafu Testaufgabe",
+    "name": "nefuh/jobapp",
+    "description": "Bewerbung Testaufgabe",
     "type": "project",
     "require": {
         "smarty/smarty": "^4.3",
