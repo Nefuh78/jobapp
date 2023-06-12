@@ -1,0 +1,16 @@
+{
+    "name": "nefuh/snafu",
+    "description": "Snafu Testaufgabe",
+    "type": "project",
+    "require": {
+        "smarty/smarty": "^4.3",
+        "nette/database": "^3.1",
+        "tracy/tracy": "^2.8"
+    },
+    "authors": [
+        {
+            "name": "Joerg Hufen",
+            "email": "jhufen@mailbox.org"
+        }
+    ]
+}
