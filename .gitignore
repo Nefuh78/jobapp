@@ -8,3 +8,4 @@ vendor/autoload.php
 cache/
 template_cache/
 composer.lock
+cap/

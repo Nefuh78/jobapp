@@ -35,7 +35,7 @@ $smarty->setTemplateDir(BASE_DIR.DIRECTORY_SEPARATOR.'template'.DIRECTORY_SEPARA
 $smarty->setCompileDir(BASE_DIR.DIRECTORY_SEPARATOR.'template_cache/'.DIRECTORY_SEPARATOR);
 $smarty->setConfigDir(BASE_DIR.DIRECTORY_SEPARATOR.'includes'.DIRECTORY_SEPARATOR);
 $smarty->setCacheDir(BASE_DIR.DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR);
-$smarty->caching = false; 
+$smarty->caching = true; 
 $smarty->cache_lifetime = 86400;
 $smarty->compile_check = true;
 
@@ -59,7 +59,7 @@ try {
 }
 catch (Exception $e) {
     $error_message = $e->getMessage();
-    $smarty->assign('error_title', 'No connection to local database');
+    $smarty->assign('error_title', 'No connection to JTL Wawi database');
     $smarty->assign('error_message', 'No connection to database on server '.config::get_var('MSSQL_DB_HOST', 'DATABASE_JTL').config::get_var('MSSQL_DB_INSTANCE', 'DATABASE_JTL').'<p>Please check the server!</p><p><span class="fw-bold">Error:</span>&nbsp;'.$error_message.'</p>');
     $smarty->display('error.tpl');
     die();
@@ -156,6 +156,11 @@ switch($action) {
     case 'get_defect_articles':
         $data = json_encode(jtl::get_defect_articles(), JSON_NUMERIC_CHECK);
         echo $data;
+        die();
+    break;
+
+    case 'get_stock_corrections':
+        $data = jtl::get_stock_corrections();
         die();
     break;
 }
