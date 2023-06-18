@@ -160,7 +160,13 @@ switch($action) {
     break;
 
     case 'get_stock_corrections':
+        /** 
+         *  Funktion um Daten für CSV-Datei für den zweiten Teil der Aufgaben zu genieren, um diese dann in Excel 
+         *  für die weiterbearbeitung zu importieren. 
+         **/
         $data = jtl::get_stock_corrections();
+        main::write_csv(BASE_DIR.DIRECTORY_SEPARATOR.'correction_data.csv', $data[1]);
+        main::write_csv(BASE_DIR.DIRECTORY_SEPARATOR.'defectarticles_data.csv', $data[2]);
         die();
     break;
 }

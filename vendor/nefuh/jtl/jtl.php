@@ -361,45 +361,66 @@ class jtl {
     public static function get_stock_corrections() {
         $return = [];
         $dataset = self::db()->fetchAll("  SELECT 
+                                            tArtikel.cArtNr,
                                             tWarenLagerAusgang.kArtikel,
                                             tWarenLagerAusgang.fAnzahl AS Menge, 
                                             tWarenLagerAusgang.dErstellt AS Datum,
                                             tWarenLager.cName AS Lagername,
                                             tArtikelBeschreibung.cName AS Artikelname,
                                             tArtikel.kZustand AS Zustand,
-                                            tBenutzer.cName AS Benutzer
+                                            tBenutzer.cName AS Benutzer 
                                         FROM tWarenLagerAusgang 
                                         LEFT JOIN tWarenLagerPlatz ON tWarenLagerPlatz.kWarenLagerPlatz = tWarenLagerAusgang.kWarenLagerPlatz
                                         LEFT JOIN tWarenLager ON tWarenLager.kWarenLager = tWarenLagerPlatz.kWarenLager
                                         LEFT JOIN tArtikelBeschreibung ON tArtikelBeschreibung.kArtikel = tWarenLagerAusgang.kArtikel AND tArtikelBeschreibung.kSprache = 1 AND tArtikelBeschreibung.kPlattform = 1
                                         LEFT JOIN tArtikel ON tArtikel.kArtikel = tWarenLagerAusgang.kArtikel
                                         LEFT JOIN tBenutzer ON tBenutzer.kBenutzer = tWarenLagerAusgang.kBenutzer
-                                        WHERE", ['kBuchungsart' => 30, 'dErstellt >=' => new DateTime('2019-01-01 00:00:00'), 'dErstellt <=' => new DateTime(date('Y-m-d 23:59:59'))]);
+                                        WHERE", ['dErstellt >=' => new DateTime('2019-01-01 00:00:00'), 'dErstellt <=' => new DateTime(date('Y-m-d 23:59:59'))], 'ORDER BY dErstellt ASC');
         if (isset($dataset) && !empty($dataset)) {
+            $i = 0;
+            $pre_zustand = 0;
             foreach ($dataset as $row) {
-                $data[$row['Zustand']][$row['kArtikel']][$row['Datum']->format('U')] = [
+                if ($pre_zustand != [$row['Zustand']]) $i = 0;
+                if ($i == 0) {
+                    $data[$row['Zustand']][0] = ['Artikelnummer', 'Artikelname', 'DurschschnittEKNetto', 'Menge', 'EK Summe'];
+                    $i++;
+                }
+                if (isset($data[$row['Zustand']][$row['kArtikel']]['Menge']) && !empty($data[$row['Zustand']][$row['kArtikel']]['Menge']))
+                    $data[$row['Zustand']][$row['kArtikel']]['Menge'] += $row['Menge'];
+                else
+                    $data[$row['Zustand']][$row['kArtikel']]['Menge'] = floatval($row['Menge']);
+                $sum_net = self::calc_average_purchase_price($row['kArtikel'], 1);
+                $data[$row['Zustand']][$row['kArtikel']] = [
+                    'Artikelnummer' => $row['cArtNr'],
                     'Artikelname' => $row['Artikelname'], 
-                    'Menge' => $row['Menge'], 
-                    'Buchungsdatum' => $row['Datum']->format('d.m.Y H:i:s'),
-                    'Mitarbeiter' => $row['Benutzer'],
-                    'DurchschnittEKNetto' => self::calc_average_purchase_price($row['kArtikel'])
+                    'DurchschnittEKNetto' => self::calc_average_purchase_price($row['kArtikel'], $data[$row['Zustand']][$row['kArtikel']]['Menge']),
+                    'Menge' => $data[$row['Zustand']][$row['kArtikel']]['Menge'], 
+                    'EK Summe' => $sum_net
                 ];
+                $pre_zustand = [$row['Zustand']];
             }
-            foreach ($data as $zustand => $values)
-                $data['GesamtBuchungen'][$zustand] = count($values);
-                $data['total_defect_articles'] = (isset($data[self::$defect_id])) ? count($data[self::$defect_id]) : 0;
-        }                                        
-        dumpe($data);                                        
-    }
-
-    private static function calc_average_purchase_price($kArtikel) {
-        $return = 0;
-        $data = self::db()->fetchAll("SELECT fEKNetto, fMenge FROM tLieferantenBestellungPos WHERE kArtikel = ?", $kArtikel);
-        if (isset($data) && !empty($data)) {
-            foreach ($data as $row) {
-                $return += ($row['fEKNetto'] / $row['fMenge']);
+        }     
+        foreach ($data as $zustand => $rows) {
+            foreach ($rows as $index => $values) {
+                if ($index != 0) {
+                    $values['DurchschnittEKNetto'] = number_format($values['DurchschnittEKNetto'], 4, ',', '.');
+                    $values['Menge'] = number_format($values['Menge'], 4, ',', '.');
+                    $values['EK Summe'] = number_format($values['EK Summe'], 4, ',', '.');
+                }
+                $return[$zustand][$index] = $values;
+                
             }
         }
+        unset($data, $zustand, $rows);
+        return $return;                                   
+    }
+
+    private static function calc_average_purchase_price($kArtikel, $menge) {
+        $return = 0;
+        $data = self::db()->fetch("SELECT SUM(fEKNetto) AS fEKNetto FROM tLieferantenBestellungPos WHERE kArtikel = ?", $kArtikel);
+        if (isset($data['fEKNetto']) && !empty($data['fEKNetto']))
+            $return += ($data['fEKNetto'] / $menge);
         return (float) $return;
     }
+
 }
