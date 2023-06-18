@@ -9,4 +9,4 @@ cache/
 template_cache/
 composer.lock
 cap/
-.csv
+*.csv
