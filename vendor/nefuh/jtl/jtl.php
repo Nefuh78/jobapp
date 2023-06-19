@@ -358,7 +358,12 @@ class jtl {
         return $return;
     }
 
-    public static function get_stock_corrections() {
+    /**
+     * Function to fetch stock data from articles for exporting into csv file, for use in Excel.
+     *
+     * @return array data array with stock articles sorted by article state
+     */
+    public static function get_stock_corrections():array {
         $return = [];
         $dataset = self::db()->fetchAll("  SELECT 
                                             tArtikel.cArtNr,
@@ -378,9 +383,9 @@ class jtl {
                                         WHERE", ['dErstellt >=' => new DateTime('2019-01-01 00:00:00'), 'dErstellt <=' => new DateTime(date('Y-m-d 23:59:59'))], 'ORDER BY dErstellt ASC');
         if (isset($dataset) && !empty($dataset)) {
             $i = 0;
-            $pre_zustand = 0;
+            $pre_state = 0;
             foreach ($dataset as $row) {
-                if ($pre_zustand != [$row['Zustand']]) $i = 0;
+                if ($pre_state != [$row['Zustand']]) $i = 0;
                 if ($i == 0) {
                     $data[$row['Zustand']][0] = ['Artikelnummer', 'Artikelname', 'DurschschnittEKNetto', 'Menge', 'EK Summe'];
                     $i++;
@@ -397,25 +402,32 @@ class jtl {
                     'Menge' => $data[$row['Zustand']][$row['kArtikel']]['Menge'], 
                     'EK Summe' => $sum_net
                 ];
-                $pre_zustand = [$row['Zustand']];
+                $pre_state = [$row['Zustand']];
             }
         }     
-        foreach ($data as $zustand => $rows) {
+        foreach ($data as $state => $rows) {
             foreach ($rows as $index => $values) {
                 if ($index != 0) {
                     $values['DurchschnittEKNetto'] = number_format($values['DurchschnittEKNetto'], 4, ',', '.');
                     $values['Menge'] = number_format($values['Menge'], 4, ',', '.');
                     $values['EK Summe'] = number_format($values['EK Summe'], 4, ',', '.');
                 }
-                $return[$zustand][$index] = $values;
+                $return[$state][$index] = $values;
                 
             }
         }
-        unset($data, $zustand, $rows);
+        unset($data, $state, $rows);
         return $return;                                   
     }
 
-    private static function calc_average_purchase_price($kArtikel, $menge) {
+    /**
+     * Retrieve average purchase price from supplier orders or if not suppliers orders available fetch default purchase price.
+     *
+     * @param int $kArtikel internal article id from JTL
+     * @param int $menge the stock quantity of the article
+     * @return float The (average) purchase price
+     */
+    private static function calc_average_purchase_price(int $kArtikel, int $menge):float {
         $return = 0;
         $data = self::db()->fetch("SELECT SUM(fEKNetto) AS fEKNetto FROM tLieferantenBestellungPos WHERE kArtikel = ?", $kArtikel);
         if (isset($data['fEKNetto']) && !empty($data['fEKNetto']))
