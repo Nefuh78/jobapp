@@ -420,6 +420,10 @@ class jtl {
         $data = self::db()->fetch("SELECT SUM(fEKNetto) AS fEKNetto FROM tLieferantenBestellungPos WHERE kArtikel = ?", $kArtikel);
         if (isset($data['fEKNetto']) && !empty($data['fEKNetto']))
             $return += ($data['fEKNetto'] / $menge);
+        else {
+            $data = self::db()->fetch("SELECT fEKNetto FROM tArtikel WHERE kArtikel = ?", $kArtikel);
+            if (isset($data['fEKNetto']) && !empty($data['fEKNetto'])) $return = $data['fEKNetto'];
+        }
         return (float) $return;
     }
 
